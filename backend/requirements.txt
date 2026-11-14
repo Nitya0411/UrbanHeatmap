@@ -1,0 +1,11 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+# For the real pipeline described in the paper:
+# xgboost
+# shap
+# scikit-learn
+# geopandas
+# earthengine-api
+# numpy
+# pandas
