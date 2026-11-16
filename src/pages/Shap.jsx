@@ -39,13 +39,13 @@ export default function Shap() {
     <>
       <PageHeader title="SHAP Explainability" subtitle="Understand which factors are most influential in predicting urban heat" />
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="card">
+        <div className="card flex flex-col">
           <h2 className="card-title">Feature Importance (mean |SHAP|)</h2>
           <Async state={global} height={220}>{(d) => <ShapBars data={d} />}</Async>
         </div>
         <div className="card">
           <h2 className="card-title">Contribution by feature</h2>
-          <div className="mt-3 h-72">
+          <div className="mt-3 h-64">
             <Async state={global} height={288}>
               {(d) => (
                 <ResponsiveContainer>

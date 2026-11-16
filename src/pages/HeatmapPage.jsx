@@ -37,8 +37,8 @@ export default function HeatmapPage() {
 
       <section className="grid gap-4 lg:grid-cols-4">
         <div className="card lg:col-span-3">
-          <Async state={spots} height={520}>
-            {(d) => <HeatMap points={d} layer={layer} center={center} zoom={pin ? 12 : city.zoom} height={520} pin={pin} onMapClick={onMapClick} />}
+          <Async state={spots} height={480}>
+            {(d) => <HeatMap points={d} layer={layer} center={center} zoom={pin ? 12 : city.zoom} height="clamp(420px, calc(100vh - 340px), 760px)" pin={pin} onMapClick={onMapClick} />}
           </Async>
           <p className="muted mt-2">Click the map to analyse any point. Tap a marker to see its NDVI and built-up share.</p>
         </div>

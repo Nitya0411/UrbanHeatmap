@@ -94,7 +94,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-5 px-4 py-6 sm:px-7"><Outlet /></main>
+        <main className="flex flex-1 flex-col gap-5 px-4 py-6 sm:px-7 [&>*:last-child]:flex-1"><Outlet /></main>
 
         <footer className="flex flex-wrap justify-between gap-x-6 gap-y-2 border-t border-slate-200 px-4 py-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:px-7 print:hidden">
           <span>© 2026 Urban Heatmap · Ajay Kumar Garg Engineering College, Ghaziabad</span>

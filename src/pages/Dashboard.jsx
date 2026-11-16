@@ -13,6 +13,8 @@ import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
 import { addDays } from '../utils/date.js';
 
+const MAP_H = 'clamp(340px, calc(100vh - 430px), 640px)';
+
 function kpiProps(o) {
   const fmt = (m, unit) => ({ value: `${m.value}${unit}`, delta: `${m.change_pct >= 0 ? '↑' : '↓'} ${Math.abs(m.change_pct)}% vs. ${m.vs}` });
   return [
@@ -54,7 +56,7 @@ export default function Dashboard() {
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="card lg:col-span-2">
           <h2 className="card-title mb-3">Land Surface Temperature (LST) Heatmap</h2>
-          <Async state={spots} height={380}>{(d) => <HeatMap points={d} layer={lstLayer} center={city.center} zoom={city.zoom} height={380} />}</Async>
+          <Async state={spots} height={380}>{(d) => <HeatMap points={d} layer={lstLayer} center={city.center} zoom={city.zoom} height={MAP_H} />}</Async>
         </div>
         <div className="flex flex-col gap-4">
           <div className="card">
@@ -75,12 +77,12 @@ export default function Dashboard() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div className="card">
+        <div className="card flex flex-col">
           <h2 className="card-title">Temperature Trend</h2>
-          <div className="mt-3 h-56">
+          <div className="relative mt-3 min-h-[224px] flex-1">
             <Async state={trend} height={224}>
               {(d) => (
-                <ResponsiveContainer>
+                <div className="absolute inset-0"><ResponsiveContainer>
                   <LineChart data={d}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
                     <XAxis dataKey="date" tickFormatter={(v) => v.slice(5)} tick={{ fontSize: 11, fill: '#94a3b8' }} />
@@ -91,20 +93,20 @@ export default function Dashboard() {
                     <Line type="monotone" dataKey="avg" stroke="#ea580c" strokeWidth={2.5} dot={{ r: 3 }} name="Avg" />
                     <Line type="monotone" dataKey="min" stroke="#2b6fb5" strokeWidth={2.5} dot={{ r: 3 }} name="Min" />
                   </LineChart>
-                </ResponsiveContainer>
+                </ResponsiveContainer></div>
               )}
             </Async>
           </div>
         </div>
-        <div className="card text-center">
+        <div className="card flex flex-col text-center">
           <h2 className="card-title text-left">Model Performance</h2>
           <Async state={metrics} height={200}>
             {(m) => (
-              <>
-                <div className="mt-3"><Gauge value={m.r2} /></div>
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <Gauge value={m.r2} />
                 <div className="mt-2 font-bold">{m.model} Model</div>
                 <div className="muted">MAE {m.mae} · RMSE {m.rmse}</div>
-              </>
+              </div>
             )}
           </Async>
         </div>

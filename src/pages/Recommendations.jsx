@@ -31,47 +31,48 @@ export default function Recommendations() {
 
       <Async state={rec} height={320}>
         {(d) => d && (
-          <section className="grid gap-4 lg:grid-cols-5">
-            <div className="card lg:col-span-2">
-              <HeatMap points={spots.data} center={[d.location.lat, d.location.lng]} zoom={11} height={300} selectedId={d.location.id} />
-              <div className="mt-4 text-sm">
-                <div className="muted">Selected location</div>
-                <div className="text-lg font-bold">{d.location.name}</div>
-                <div className="mt-1">Current LST: <b className="text-red-600 dark:text-red-400">{d.location.lst.toFixed(1)} °C</b></div>
-                <div className="muted mt-1">{d.location.driver}</div>
+          <section className="flex flex-col gap-4">
+            <div className="card flex flex-1 flex-col">
+              <div className="relative min-h-[300px] flex-1">
+                <div className="absolute inset-0"><HeatMap points={spots.data} center={[d.location.lat, d.location.lng]} zoom={11} height="100%" selectedId={d.location.id} /></div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
+                <div><span className="muted">Selected location </span><b className="text-lg">{d.location.name}</b></div>
+                <div>Current LST: <b className="text-red-600 dark:text-red-400">{d.location.lst.toFixed(1)} °C</b></div>
+                <div className="muted">{d.location.driver}</div>
               </div>
             </div>
-            <div className="flex flex-col gap-4 lg:col-span-3">
-              <div className="card">
-                <h2 className="card-title">Recommended strategies</h2>
-                {d.strategies.length === 0 && <p className="muted mt-3 flex items-center gap-2 text-sm"><Lightbulb size={16} />No strategies available for this location yet.</p>}
-                <ol className="mt-3 space-y-3">
-                  {d.strategies.map((s, i) => {
-                    const Icon = icons[i % icons.length];
-                    return (
-                      <li key={s.title} className="flex items-start gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">
-                        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-teal-50 text-teal-600 dark:bg-teal-950"><Icon size={20} /></span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <b className="text-sm">{s.title}</b>
-                            <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact]}`}>{s.impact} impact</span>
-                          </div>
-                          <p className="muted mt-1">{s.description}</p>
-                          <p className="mt-1 text-xs font-medium">Est. cooling: −{s.est_cooling} °C</p>
+
+            <div className="card">
+              <h2 className="card-title">Recommended strategies</h2>
+              {d.strategies.length === 0 && <p className="muted mt-3 flex items-center gap-2 text-sm"><Lightbulb size={16} />No strategies available for this location yet.</p>}
+              <ol className="mt-3 grid gap-3 md:grid-cols-3">
+                {d.strategies.map((s, i) => {
+                  const Icon = icons[i % icons.length];
+                  return (
+                    <li key={s.title} className="flex items-start gap-3 rounded-xl border border-slate-100 p-4 dark:border-slate-800">
+                      <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-teal-50 text-teal-600 dark:bg-teal-950"><Icon size={20} /></span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <b className="text-sm">{s.title}</b>
+                          <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact]}`}>{s.impact} impact</span>
                         </div>
-                      </li>
-                    );
-                  })}
-                </ol>
+                        <p className="muted mt-1">{s.description}</p>
+                        <p className="mt-2 text-xs font-medium">Est. cooling: −{s.est_cooling} °C</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+
+            <div className="card flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950 dark:to-slate-900">
+              <div>
+                <div className="muted">Overall expected cooling</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">−{d.overall_cooling} °C</div>
+                <div className="muted">with combined strategies</div>
               </div>
-              <div className="card flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950 dark:to-slate-900">
-                <div>
-                  <div className="muted">Overall expected cooling</div>
-                  <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">−{d.overall_cooling} °C</div>
-                  <div className="muted">with combined strategies</div>
-                </div>
-                <button className="btn" onClick={() => navigate('/reports')}>Get Report</button>
-              </div>
+              <button className="btn" onClick={() => navigate('/reports')}>Get Report</button>
             </div>
           </section>
         )}

@@ -25,7 +25,7 @@ function Clicks({ onClick }) {
  * pin      : {lat, lng, label} marker for the searched / clicked place
  * onMapClick(lat, lng) : called when the user clicks the map
  */
-export default function HeatMap({ points = [], layer, center = [28.61, 77.21], zoom = 10, height = 380, selectedId, pin, onMapClick }) {
+export default function HeatMap({ points = [], layer, center = [28.61, 77.21], zoom = 10, height = 380, selectedId, pin, onMapClick, showLegend = true }) {
   const [base, setBase] = useState('Satellite');
   const layerId = layer?.id || 'lst';
   const tileUrl = layer?.tile_url;
@@ -63,7 +63,7 @@ export default function HeatMap({ points = [], layer, center = [28.61, 77.21], z
         ))}
       </div>
 
-      <div className="absolute bottom-3 right-3 z-[500] hidden rounded-xl bg-white/95 p-2.5 text-[11px] shadow dark:bg-slate-900/95 sm:block">
+      <div className={`absolute bottom-3 right-3 z-[500] hidden rounded-xl bg-white/95 p-2.5 text-[11px] shadow dark:bg-slate-900/95 ${showLegend ? 'sm:block' : ''}`}>
         <b className="mb-1 block">{title}</b>
         {legend.map(([c, l]) => (
           <div key={l} className="flex items-center gap-2 leading-5"><span className="h-3 w-3 rounded-sm" style={{ background: c }} />{l}</div>
