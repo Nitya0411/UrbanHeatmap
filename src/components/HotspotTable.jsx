@@ -1,4 +1,4 @@
-import { riskClass } from '../data/mock.js';
+import { riskClass } from '../utils/colors.js';
 
 export default function HotspotTable({ rows, compact = false }) {
   return (
