@@ -7,36 +7,59 @@ import HeatMap from '../components/HeatMap.jsx';
 import ShapBars from '../components/ShapBars.jsx';
 import Gauge from '../components/Gauge.jsx';
 import HotspotTable from '../components/HotspotTable.jsx';
-import { useFetch } from '../services/api.js';
-import { kpis, hotspots, shap, metrics, trend } from '../data/mock.js';
+import Async, { Skeleton } from '../components/Async.jsx';
+import { useApi } from '../hooks/useApi.js';
+import { useApp } from '../context/AppContext.jsx';
+import { api } from '../services/api.js';
+import { addDays } from '../utils/date.js';
 
-const icons = { lst: Thermometer, hot: Flame, veg: Leaf, built: Building2 };
+function kpiProps(o) {
+  const fmt = (m, unit) => ({ value: `${m.value}${unit}`, delta: `${m.change_pct >= 0 ? '↑' : '↓'} ${Math.abs(m.change_pct)}% vs. ${m.vs}` });
+  return [
+    { key: 'lst', label: 'Avg. LST', tone: 'orange', icon: Thermometer, bad: o.avg_lst.change_pct > 0, ...fmt(o.avg_lst, ' °C') },
+    { key: 'hot', label: 'Hotspots Detected', tone: 'red', icon: Flame, bad: o.hotspot_count.change_pct > 0, ...fmt(o.hotspot_count, '') },
+    { key: 'veg', label: 'Vegetation Cover', tone: 'green', icon: Leaf, bad: o.vegetation_cover.change_pct < 0, ...fmt(o.vegetation_cover, '%') },
+    { key: 'built', label: 'Built-up Area', tone: 'blue', icon: Building2, bad: o.builtup_area.change_pct > 0, ...fmt(o.builtup_area, '%') },
+  ];
+}
 
 export default function Dashboard() {
-  const spots = useFetch('/hotspots', hotspots);
-  const drivers = useFetch('/shap', shap);
-  const m = useFetch('/metrics', metrics);
+  const { cityName, date, effectiveDate, city } = useApp();
+  const overview = useApi(() => api.overview({ city: cityName, date }), [cityName, date]);
+  const spots = useApi(() => api.hotspots({ city: cityName, date }), [cityName, date]);
+  const layers = useApi(() => api.layers(), []);
+  const shap = useApi(() => api.shapGlobal(), []);
+  const metrics = useApi(() => api.metrics(), []);
+  const trend = useApi(
+    () => api.trend({ city: cityName, from: effectiveDate ? addDays(effectiveDate, -4) : undefined, to: effectiveDate || undefined }),
+    [cityName, effectiveDate]
+  );
+  const lstLayer = layers.data?.find((l) => l.id === 'lst');
 
   return (
     <>
       <PageHeader title="Urban Heatmap Dashboard" subtitle="Analyze | Predict | Explain | Mitigate">
-        <span className="chip">25 May 2026</span>
-        <span className="chip">Delhi-NCR</span>
+        <span className="chip">{effectiveDate || 'Latest scene'}</span>
+        <span className="chip">{cityName}</span>
       </PageHeader>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((k) => <KpiCard key={k.key} {...k} icon={icons[k.key]} />)}
-      </section>
+      <Async state={overview} height={96}>
+        {(o) => (
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {kpiProps(o).map((k) => <KpiCard key={k.key} {...k} />)}
+          </section>
+        )}
+      </Async>
 
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="card lg:col-span-2">
           <h2 className="card-title mb-3">Land Surface Temperature (LST) Heatmap</h2>
-          <HeatMap points={spots} height={380} />
+          <Async state={spots} height={380}>{(d) => <HeatMap points={d} layer={lstLayer} center={city.center} zoom={city.zoom} height={380} />}</Async>
         </div>
         <div className="flex flex-col gap-4">
           <div className="card">
             <h2 className="card-title">Feature Importance (SHAP)</h2>
-            <ShapBars data={drivers} />
+            <Async state={shap} height={200}>{(d) => <ShapBars data={d} />}</Async>
           </div>
           <div className="card flex-1">
             <h2 className="card-title mb-3">Quick Actions</h2>
@@ -51,37 +74,46 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="card">
           <h2 className="card-title">Temperature Trend</h2>
           <div className="mt-3 h-56">
-            <ResponsiveContainer>
-              <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
-                <XAxis dataKey="d" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} domain={[25, 50]} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="max" stroke="#dc2626" strokeWidth={2.5} dot={{ r: 3 }} name="Max" />
-                <Line type="monotone" dataKey="avg" stroke="#ea580c" strokeWidth={2.5} dot={{ r: 3 }} name="Avg" />
-                <Line type="monotone" dataKey="min" stroke="#2b6fb5" strokeWidth={2.5} dot={{ r: 3 }} name="Min" />
-              </LineChart>
-            </ResponsiveContainer>
+            <Async state={trend} height={224}>
+              {(d) => (
+                <ResponsiveContainer>
+                  <LineChart data={d}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
+                    <XAxis dataKey="date" tickFormatter={(v) => v.slice(5)} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} domain={['auto', 'auto']} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="max" stroke="#dc2626" strokeWidth={2.5} dot={{ r: 3 }} name="Max" />
+                    <Line type="monotone" dataKey="avg" stroke="#ea580c" strokeWidth={2.5} dot={{ r: 3 }} name="Avg" />
+                    <Line type="monotone" dataKey="min" stroke="#2b6fb5" strokeWidth={2.5} dot={{ r: 3 }} name="Min" />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </Async>
           </div>
         </div>
         <div className="card text-center">
           <h2 className="card-title text-left">Model Performance</h2>
-          <div className="mt-3"><Gauge value={m.r2} /></div>
-          <div className="mt-2 font-bold">XGBoost Model</div>
-          <div className="muted">MAE {m.mae} · RMSE {m.rmse}</div>
+          <Async state={metrics} height={200}>
+            {(m) => (
+              <>
+                <div className="mt-3"><Gauge value={m.r2} /></div>
+                <div className="mt-2 font-bold">{m.model} Model</div>
+                <div className="muted">MAE {m.mae} · RMSE {m.rmse}</div>
+              </>
+            )}
+          </Async>
         </div>
-        
-        <div className="card md:col-span-2">
+        <div className="card md:col-span-2 xl:col-span-1">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="card-title">Top Hotspots</h2>
             <Link to="/heatmap" className="text-xs font-medium text-teal-600 dark:text-teal-400">View map</Link>
           </div>
-          <HotspotTable rows={spots.slice(0, 4)} compact />
+          <Async state={spots} height={180}>{(d) => <HotspotTable rows={d.slice(0, 4)} compact />}</Async>
         </div>
       </section>
     </>
