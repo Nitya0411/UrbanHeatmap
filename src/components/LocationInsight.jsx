@@ -12,7 +12,7 @@ export default function LocationInsight({ pin }) {
 
   if (!pin) {
     return (
-      <div className="card">
+      <div className="card flex-1">
         <h2 className="card-title">Location insight</h2>
         <p className="muted mt-2 flex items-start gap-2 text-sm"><MapPin size={16} className="mt-0.5 flex-none" />Click anywhere on the map, or search for a place, to see its predicted temperature and what drives it.</p>
       </div>
@@ -20,7 +20,7 @@ export default function LocationInsight({ pin }) {
   }
 
   return (
-    <div className="card">
+    <div className="card flex flex-1 flex-col">
       <h2 className="card-title">Location insight</h2>
       <p className="muted">{pin.label || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`}</p>
       <div className="mt-3">
@@ -36,7 +36,7 @@ export default function LocationInsight({ pin }) {
         </Async>
       </div>
       <h3 className="mt-4 text-sm font-bold">Why this temperature?</h3>
-      <div className="mt-2"><Async state={shap} height={160}>{(d) => d && <LocalShap data={d} />}</Async></div>
+      <div className="mt-2 flex flex-1 flex-col"><Async state={shap} height={160}>{(d) => d && <LocalShap data={d} />}</Async></div>
     </div>
   );
 }

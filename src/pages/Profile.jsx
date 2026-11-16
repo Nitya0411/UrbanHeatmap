@@ -9,7 +9,8 @@ export default function Profile() {
   return (
     <>
       <PageHeader title="Profile" subtitle="Your account and connection details" />
-      <section className="card max-w-xl">
+      <div className="grid flex-1 gap-4 lg:grid-cols-3">
+      <section className="card lg:col-span-2">
         <div className="flex items-center gap-4">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-lg font-bold text-white">{user.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}</span>
           <div><div className="text-lg font-bold">{user.name}</div><div className="muted">{user.email}</div></div>
@@ -19,11 +20,12 @@ export default function Profile() {
         </dl>
         <button className="btn-ghost mt-4" onClick={logout}><LogOut size={16} />Sign out</button>
       </section>
-      <section className="card max-w-xl">
+      <section className="card">
         <h2 className="card-title">Data source</h2>
         <p className="mt-2 text-sm">{USE_MOCK ? 'Using built-in sample data (demo mode).' : `Connected to the backend at ${API_URL}.`}</p>
         <p className="muted mt-1">Change this with VITE_USE_MOCK in the .env file.</p>
       </section>
+      </div>
     </>
   );
 }

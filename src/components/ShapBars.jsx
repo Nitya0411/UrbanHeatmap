@@ -3,7 +3,7 @@ import { SHAP_PALETTE } from '../utils/colors.js';
 export default function ShapBars({ data }) {
   const max = Math.max(...data.map((d) => d.value), 0.0001);
   return (
-    <ul className="mt-3 space-y-2.5">
+    <ul className="mt-3 flex flex-1 flex-col justify-between gap-2.5">
       {data.map((d, i) => (
         <li key={d.feature} className="grid grid-cols-[110px_1fr_36px] items-center gap-2 text-xs">
           <span className="truncate" title={d.feature}>{d.feature}</span>

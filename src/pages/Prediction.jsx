@@ -32,7 +32,7 @@ export default function Prediction() {
         <div className="card lg:col-span-2">
           <h2 className="card-title mb-3">Predicted LST</h2>
           <Async state={spots} height={340}>
-            {(d) => <HeatMap points={d} layer={lstLayer} center={pin ? [pin.lat, pin.lng] : city.center} zoom={pin ? 12 : city.zoom} height={340} pin={pin}
+            {(d) => <HeatMap points={d} layer={lstLayer} center={pin ? [pin.lat, pin.lng] : city.center} zoom={pin ? 12 : city.zoom} height="clamp(320px, calc(100vh - 480px), 560px)" pin={pin}
               onMapClick={(lat, lng) => { setArea(''); run({ lat, lng }); }} />}
           </Async>
           <p className="muted mt-2">Choose an area below, or click any point on the map.</p>
@@ -72,12 +72,12 @@ export default function Prediction() {
               )}
             </Async>
           </div>
-          <div className="card flex-1">
+          <div className="card flex flex-1 flex-col">
             <h2 className="card-title">Actual vs Predicted</h2>
-            <div className="mt-3 h-64">
+            <div className="relative mt-3 min-h-[256px] flex-1">
               <Async state={scatter} height={256}>
                 {(d) => (
-                  <ResponsiveContainer>
+                  <div className="absolute inset-0"><ResponsiveContainer>
                     <ScatterChart margin={{ left: -10, right: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
                       <XAxis type="number" dataKey="actual" name="Actual" domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#94a3b8' }} label={{ value: 'Actual LST (°C)', position: 'insideBottom', offset: -2, fontSize: 11, fill: '#94a3b8' }} />
@@ -86,7 +86,7 @@ export default function Prediction() {
                       <ReferenceLine segment={[{ x: 24, y: 24 }, { x: 56, y: 56 }]} stroke="#dc2626" strokeDasharray="5 4" />
                       <Scatter data={d} fill="#2563eb" fillOpacity={0.7} />
                     </ScatterChart>
-                  </ResponsiveContainer>
+                  </ResponsiveContainer></div>
                 )}
               </Async>
             </div>
