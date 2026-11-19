@@ -16,7 +16,8 @@ export default function ShapSummaryPlot({ data }) {
     return () => ro.disconnect();
   }, []);
 
-  const rowH = 38, left = 140, right = 16, top = 8, footer = 46;
+  const rowH = 38, right = 16, top = 8, footer = 46;
+  const left = Math.min(280, Math.max(140, 20 + Math.max(...data.map((f) => f.feature.length)) * 6.6));
   const height = top + data.length * rowH + footer;
   const lim = Math.max(...data.flatMap((f) => f.points.map((p) => Math.abs(p.shap))), 0.01);
   const x = (v) => left + ((v + lim) / (2 * lim)) * (w - left - right);

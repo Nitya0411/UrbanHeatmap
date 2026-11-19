@@ -6,6 +6,8 @@ import { useApi } from '../hooks/useApi.js';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
 import { impactClass } from '../utils/colors.js';
+import { MonsoonWarning } from '../components/AccuracyNote.jsx';
+import { cooling, isNum } from '../utils/format.js';
 
 export default function Reports() {
   const { cityName, date, effectiveDate } = useApp();
@@ -34,8 +36,9 @@ export default function Reports() {
       <section className="card">
         <h2 className="card-title">Model summary</h2>
         <Async state={metrics} height={60}>
-          {(m) => <p className="mt-2 text-sm">{m.model} regression: R² {m.r2}, MAE {m.mae} °C, RMSE {m.rmse} °C, trained on {m.n_train} samples and tested on {m.n_test}.</p>}
+          {(m) => <p className="mt-2 text-sm">{m.model} regression: R² {m.r2}, MAE {m.mae} °C, RMSE {m.rmse} °C, {m.n_train ? `trained on ${Number(m.n_train).toLocaleString()} samples and tested on ${Number(m.n_test).toLocaleString()}.` : ''}</p>}
         </Async>
+        <MonsoonWarning className="mt-3" />
         <Async state={drivers} height={60}>
           {(d) => <p className="mt-2 text-sm">Strongest heating drivers: {d.positive.map((x) => x.feature).join(', ')}. Strongest cooling drivers: {d.negative.map((x) => x.feature).join(', ')}.</p>}
         </Async>
@@ -53,11 +56,11 @@ export default function Reports() {
             <ul className="mt-2 space-y-1 text-sm">
               {d.strategies.map((s) => (
                 <li key={s.title} className="flex flex-wrap items-center gap-2">
-                  <span>{s.title}: −{s.est_cooling} °C</span>
-                  <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact]}`}>{s.impact} impact</span>
+                  <span>{s.title}: {cooling(s.est_cooling)}</span>
+                  {isNum(s.est_cooling) && <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact] || impactClass.Low}`}>{s.impact} impact</span>}
                 </li>
               ))}
-              <li className="pt-1 font-bold">Overall expected cooling: −{d.overall_cooling} °C</li>
+              <li className="pt-1 font-bold">Overall expected cooling: {cooling(d.overall_cooling)}</li>
             </ul>
           )}
         </Async>

@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react';
 import Async from './Async.jsx';
 import LocalShap from './LocalShap.jsx';
+import { MonsoonWarning } from './AccuracyNote.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { api } from '../services/api.js';
 
@@ -35,6 +36,7 @@ export default function LocationInsight({ pin }) {
           )}
         </Async>
       </div>
+      <MonsoonWarning className="mt-3" />
       <h3 className="mt-4 text-sm font-bold">Why this temperature?</h3>
       <div className="mt-2 flex flex-1 flex-col"><Async state={shap} height={160}>{(d) => d && <LocalShap data={d} />}</Async></div>
     </div>

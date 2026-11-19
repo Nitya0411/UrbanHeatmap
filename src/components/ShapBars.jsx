@@ -5,8 +5,8 @@ export default function ShapBars({ data }) {
   return (
     <ul className="mt-3 flex flex-1 flex-col justify-between gap-2.5">
       {data.map((d, i) => (
-        <li key={d.feature} className="grid grid-cols-[110px_1fr_36px] items-center gap-2 text-xs">
-          <span className="truncate" title={d.feature}>{d.feature}</span>
+        <li key={d.feature} className="grid grid-cols-[150px_1fr_40px] items-center gap-2 text-xs">
+          <span className="break-words leading-tight">{d.feature}</span>
           <span className="h-2.5 rounded bg-slate-100 dark:bg-slate-800">
             <span className="block h-2.5 rounded" style={{ width: `${(d.value / max) * 100}%`, background: SHAP_PALETTE[i % SHAP_PALETTE.length] }} />
           </span>

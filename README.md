@@ -76,6 +76,15 @@ backend/contract_stub.py   reference implementation with sample data
 - Login token is kept in `localStorage`. A 401 response signs the user out.
 - Mock-mode accounts are for demos only. Do not enter a real password there.
 
+## ML model v3 (Central Delhi)
+
+- The model covers **Central Delhi**, not all of Delhi-NCR. The area name, map centre and zoom come from `/api/cities`.
+- The dashboard shows the monsoon warning from `/api/metrics` (`warning`) on the metrics card and next to every prediction and scenario.
+- Cool roofs, high albedo and water bodies are **not modelled**: the Scenarios page disables those sliders and shows "Not modelled" instead of a number.
+- Cooling estimates smaller than the model's average error (MAE) get a note saying they show direction only.
+- Map tiles are served at `/tiles` (proxied by Vite) for zoom 11 to 16.
+- If `/api/shap/summary` returns 404, the SHAP summary plot is hidden.
+
 ## Printing
 
 `Reports` > **Print / Save PDF** hides the menu and header so the page prints cleanly.

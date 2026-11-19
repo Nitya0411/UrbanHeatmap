@@ -3,6 +3,7 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 import PageHeader from '../components/PageHeader.jsx';
 import HeatMap from '../components/HeatMap.jsx';
 import Async, { ErrorBox } from '../components/Async.jsx';
+import { MonsoonWarning } from '../components/AccuracyNote.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
@@ -52,6 +53,7 @@ export default function Prediction() {
               Predicted LST for <b>{result.area}</b>: <b className="text-xl">{result.predicted_lst} °C</b>
               {result.actual_lst != null && <span className="muted ml-2">(observed {result.actual_lst} °C)</span>}
               {result.features && <div className="muted mt-1">{Object.entries(result.features).map(([k, v]) => `${k}: ${v}`).join(' · ')}</div>}
+              <MonsoonWarning className="mt-3" />
             </div>
           )}
         </div>
@@ -67,7 +69,8 @@ export default function Prediction() {
                       <div key={k} className="rounded-xl bg-slate-100 py-3 dark:bg-slate-800"><div className="muted">{k}</div><b className="text-xl">{v}</b></div>
                     ))}
                   </div>
-                  <p className="muted mt-2">{m.model} · {m.n_train} train / {m.n_test} test samples</p>
+                  <p className="muted mt-2">{m.model}{m.n_train ? ` · ${Number(m.n_train).toLocaleString()} train / ${Number(m.n_test).toLocaleString()} test samples` : ''}</p>
+                  <MonsoonWarning className="mt-3" />
                 </>
               )}
             </Async>

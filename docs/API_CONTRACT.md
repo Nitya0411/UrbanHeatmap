@@ -1,10 +1,20 @@
 # Urban Heatmap: API Contract
 
-Frontend ↔ Backend/ML · Version 1.1 · Prepared by the frontend team
+Frontend ↔ Backend/ML · Version 1.2 · Prepared by the frontend team
 
 ## 1. Purpose
 
 This document lists every API the React dashboard needs. The backend builds these endpoints and the frontend calls them exactly as written. If anything must change, tell the frontend team first so both sides stay in sync. Until the backend is ready, the frontend runs on sample data in the same shapes. All numbers in the examples are placeholders only.
+
+### What changed in v1.2 (ML model v3, Central Delhi)
+
+- **Area:** the model covers **Central Delhi** only. The default `city` is the first entry of `/api/cities` (examples below still say `Delhi-NCR`; use the real name).
+- **`/api/metrics`** may include `warning` (a text), for example the monsoon warning. The frontend shows it on the metrics card and next to every prediction and scenario.
+- **Not modelled:** in `/api/scenarios/compare` and `/api/recommendations`, `reduction` / `est_cooling` is `null` for measures the model cannot estimate (cool roofs, high albedo, water bodies). The frontend shows "Not modelled", never a number. `/api/simulate` still receives `cool` and `water` (the frontend sends 0).
+- **Outside the area:** `/api/predict` and `/api/shap/local` return HTTP 422 with code `OUTSIDE_AREA` for points outside the modelled area.
+- **Trend:** one point per satellite date (about every 1 to 2 weeks), not per day. The frontend asks for the last 180 days.
+- **Tiles:** `tile_url` may be relative (`/tiles/...`, the Vite dev server proxies `/tiles`). Tiles exist for zoom 11 to 16.
+- **`/api/shap/summary`** is optional. If the backend answers 404 or 501, the frontend hides the summary plot.
 
 ### What changed in v1.1
 
@@ -20,7 +30,7 @@ This document lists every API the React dashboard needs. The backend builds thes
 - **Format:** JSON, UTF-8. Single words stay as they are (`lat`, `lng`, `lst`, `ndvi`); multi-word names use snake_case (`avg_lst`, `est_cooling`).
 - **Units:** temperature in °C, `ndvi` from -1 to 1, built-up and vegetation as percentages from 0 to 100, coordinates in WGS84 decimal degrees (`lat`, `lng`).
 - **Dates:** ISO format `YYYY-MM-DD`.
-- **Common query parameters:** `city` (default `Delhi-NCR`) and `date` (default: latest available scene).
+- **Common query parameters:** `city` (default: first entry of `/api/cities`) and `date` (default: latest available scene).
 - **Lists** return a plain JSON array. **Single results** return an object.
 - **Errors:** HTTP 400, 404, 422 or 500 with body `{"error":{"code":"INVALID_INPUT","message":"lat must be between 28 and 29"}}`.
 - **Auth header:** once the user signs in, the frontend sends `Authorization: Bearer <token>` on every request. For now the backend does **not** have to check it, but if it does and returns HTTP 401, the frontend signs the user out and shows the login page.
@@ -164,7 +174,7 @@ Response:
 
 ### GET /api/scenarios/compare
 
-Params: `lat`, `lng` (optional). Reduction in °C when each measure is applied alone. Names must be exactly: Tree cover, Green roofs, Cool roofs, High albedo, Water bodies.
+Params: `lat`, `lng` (optional). Reduction in °C when each measure is applied alone. Use `null` for a measure that is not modelled. Names must be exactly: Tree cover, Green roofs, Cool roofs, High albedo, Water bodies.
 
 ```json
 [{"name":"Tree cover","reduction":4.6},{"name":"Green roofs","reduction":3.5}]

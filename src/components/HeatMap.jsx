@@ -1,11 +1,16 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Circle, CircleMarker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { LEGENDS, layerColor } from '../utils/colors.js';
+import { TILE_ZOOM } from '../config.js';
 
 const BASES = {
   Satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
   Street: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap contributors' },
 };
+
+// Fallback halo size in metres (used only while the backend has no raster tiles).
+// Small on purpose: Central Delhi hotspots are close together.
+const haloRadius = (lst) => Math.min(2200, Math.max(600, 900 + (lst - 40) * 130));
 
 function Recenter({ center, zoom }) {
   const map = useMap();
@@ -37,19 +42,18 @@ export default function HeatMap({ points = [], layer, center = [28.61, 77.21], z
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%', cursor: onMapClick ? 'crosshair' : undefined }}>
         <Recenter center={center} zoom={zoom} />
         <Clicks onClick={onMapClick} />
-        <TileLayer key={base} url={BASES[base].url} attribution={BASES[base].attribution} />
-        {tileUrl && <TileLayer key={tileUrl} url={tileUrl} opacity={0.75} attribution={layer.attribution || ''} />}
-        {points.map((p) => {
+        <TileLayer key={base} url={BASES[base].url} attribution={BASES[base].attribution} maxZoom={19} />
+        {tileUrl && <TileLayer key={tileUrl} url={tileUrl} opacity={0.75} attribution={layer.attribution || ''} minZoom={TILE_ZOOM.min} maxNativeZoom={TILE_ZOOM.max} maxZoom={19} />}
+        {/* halos first and not clickable, so they never cover the markers or block map clicks */}
+        {!tileUrl && points.map((p) => {
           const color = layerColor(layerId, p);
-          return (
-            <Fragment key={p.id}>
-              {!tileUrl && <Circle center={[p.lat, p.lng]} radius={2500 + (p.lst - 40) * 900} pathOptions={{ color, fillColor: color, fillOpacity: 0.35, weight: 0 }} />}
-              <CircleMarker center={[p.lat, p.lng]} radius={selectedId === p.id ? 9 : 6} pathOptions={{ color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }}>
-                <Tooltip><b>{p.name}</b><br />LST {p.lst.toFixed(1)} °C · NDVI {p.ndvi} · Built-up {p.builtup}%</Tooltip>
-              </CircleMarker>
-            </Fragment>
-          );
+          return <Circle key={`halo-${p.id}`} interactive={false} center={[p.lat, p.lng]} radius={haloRadius(p.lst)} pathOptions={{ color, fillColor: color, fillOpacity: 0.3, weight: 0 }} />;
         })}
+        {points.map((p) => (
+          <CircleMarker key={`pin-${p.id}`} center={[p.lat, p.lng]} radius={selectedId === p.id ? 10 : 8} pathOptions={{ color: '#fff', weight: 2, fillColor: layerColor(layerId, p), fillOpacity: 1 }}>
+            <Tooltip><b>{p.name}</b><br />LST {p.lst.toFixed(1)} °C · NDVI {p.ndvi} · Built-up {p.builtup}%</Tooltip>
+          </CircleMarker>
+        ))}
         {pin && (
           <CircleMarker center={[pin.lat, pin.lng]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#0e7c7b', fillOpacity: 1 }}>
             <Tooltip permanent direction="top">{pin.label || 'Selected point'}</Tooltip>
