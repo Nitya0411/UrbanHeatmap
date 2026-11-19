@@ -8,6 +8,8 @@ import { useApi } from '../hooks/useApi.js';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
 import { impactClass } from '../utils/colors.js';
+import { MonsoonWarning, SmallEffectNote } from '../components/AccuracyNote.jsx';
+import { cooling, isNum } from '../utils/format.js';
 
 const icons = [TreePine, Home, Droplets];
 
@@ -55,21 +57,24 @@ export default function Recommendations() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <b className="text-sm">{s.title}</b>
-                          <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact]}`}>{s.impact} impact</span>
+                          {isNum(s.est_cooling)
+                            ? <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact] || impactClass.Low}`}>{s.impact} impact</span>
+                            : <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Not modelled</span>}
                         </div>
                         <p className="muted mt-1">{s.description}</p>
-                        <p className="mt-2 text-xs font-medium">Est. cooling: −{s.est_cooling} °C</p>
+                        <p className="mt-2 text-xs font-medium">Est. cooling: {cooling(s.est_cooling)}</p>
                       </div>
                     </li>
                   );
                 })}
               </ol>
+              <div className="mt-3 space-y-2"><SmallEffectNote value={d.overall_cooling} /><MonsoonWarning /></div>
             </div>
 
             <div className="card flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950 dark:to-slate-900">
               <div>
                 <div className="muted">Overall expected cooling</div>
-                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">−{d.overall_cooling} °C</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400">{cooling(d.overall_cooling)}</div>
                 <div className="muted">with combined strategies</div>
               </div>
               <button className="btn" onClick={() => navigate('/reports')}>Get Report</button>

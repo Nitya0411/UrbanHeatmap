@@ -7,8 +7,8 @@ export default function LocalShap({ data }) {
       <p className="muted">Starts at the average of {data.base_value.toFixed(1)} °C and ends at the predicted {data.predicted_lst.toFixed(1)} °C.</p>
       <ul className="mt-3 flex flex-1 flex-col justify-evenly gap-2">
         {rows.map((r) => (
-          <li key={r.feature} className="grid grid-cols-[120px_1fr_44px] items-center gap-2 text-[13px]">
-            <span className="truncate" title={r.feature}>{r.feature}</span>
+          <li key={r.feature} className="grid grid-cols-[150px_1fr_44px] items-center gap-2 text-[13px]">
+            <span className="break-words leading-tight">{r.feature}</span>
             <span className="relative h-3 rounded bg-slate-100 dark:bg-slate-800" aria-hidden="true">
               <span className="absolute inset-y-0 left-1/2 w-px bg-slate-400" />
               <span

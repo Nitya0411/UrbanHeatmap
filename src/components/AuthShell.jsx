@@ -11,7 +11,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
         <div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-400 to-red-600" /><b className="text-lg">Urban Heatmap</b></div>
         <div>
           <h2 className="max-w-md text-4xl font-bold leading-tight">Find the heat. Explain it. Cool it down.</h2>
-          <p className="mt-4 max-w-md text-teal-100">Satellite-derived land surface temperature, XGBoost predictions and SHAP explanations to plan cooling strategies for Delhi-NCR.</p>
+          <p className="mt-4 max-w-md text-teal-100">Satellite-derived land surface temperature, XGBoost predictions and SHAP explanations to plan cooling strategies for Central Delhi.</p>
         </div>
         <div className="text-xs text-teal-200">Ajay Kumar Garg Engineering College, Ghaziabad</div>
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-orange-500/30 blur-3xl" aria-hidden="true" />

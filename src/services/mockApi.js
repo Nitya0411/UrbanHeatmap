@@ -5,6 +5,7 @@ import { addDays } from '../utils/date.js';
 
 const wait = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const r1 = (n) => +n.toFixed(1);
+const r2 = (n) => +n.toFixed(2);
 
 function nearest(lat, lng) {
   let best = D.hotspots[0], bd = Infinity;
@@ -18,16 +19,20 @@ function nearest(lat, lng) {
 function needLatLng(p) {
   const lat = Number(p.lat), lng = Number(p.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new ApiError('lat and lng are required numbers', 422, 'INVALID_INPUT');
+  const a = D.AREA;
+  if (lat < a.minLat || lat > a.maxLat || lng < a.minLng || lng > a.maxLng) {
+    throw new ApiError('This point is outside the modelled area (Central Delhi).', 422, 'OUTSIDE_AREA');
+  }
   return [lat, lng];
 }
 
 function predictAt(lat, lng) {
   const { h, d } = nearest(lat, lng);
-  const near = d < 0.08;
-  return { area: near ? h.name : 'Selected location', lat, lng, predicted_lst: Math.max(30, r1(h.lst + 0.3 - d * 12)), actual_lst: near ? h.lst : null, features: { ndvi: h.ndvi, builtup: h.builtup } };
+  const near = d < 0.03;
+  return { area: near ? h.name : 'Selected location', lat, lng, predicted_lst: Math.max(30, r1(h.lst + 0.3 - d * 40)), actual_lst: near ? h.lst : null, features: { ndvi: h.ndvi, builtup: h.builtup } };
 }
 
-const W = [['Built-up Area', 0.34], ['Impervious Surface', 0.22], ['NDVI', 0.22], ['Building Density', 0.12], ['Elevation', -0.04], ['Soil Moisture', 0.06], ['Others', 0.08]];
+const W = [['Air temperature', 0.55], ['Built-up / bare-surface index (NDBI)', 0.2], ['NDVI', 0.1], ['Humidity', 0.05], ['Sun elevation', 0.04], ['Day of year', 0.03], ['Wind speed', 0.02], ['Others', 0.01]];
 function localShap(lat, lng) {
   const p = predictAt(lat, lng);
   const delta = p.predicted_lst - 34;
@@ -37,40 +42,46 @@ function localShap(lat, lng) {
   return { lat, lng, predicted_lst: p.predicted_lst, base_value: 34.0, contributions };
 }
 
-const NEG = ['NDVI', 'Elevation', 'Soil Moisture'];
+const NEG = ['NDVI', 'Humidity', 'Wind speed'];
 function shapSummary() {
   return D.shapGlobal.map((f, fi) => ({
     feature: f.feature,
     points: Array.from({ length: 40 }, (_, i) => {
       const value = ((i * 37 + fi * 11) % 40) / 39;
       const sign = NEG.includes(f.feature) ? -1 : 1;
-      const shap = sign * (value - 0.5) * f.value * 2.4 + Math.sin(i * 7.1 + fi) * f.value * 0.15;
+      const shap = sign * (value - 0.5) * f.value * 1.2 + Math.sin(i * 7.1 + fi) * f.value * 0.15;
       return { value: +value.toFixed(2), shap: +shap.toFixed(3) };
     }),
   }));
 }
 
+// Only vegetation (tree cover, green roofs) is modelled. Cool roofs, albedo and water bodies are not.
 function simulate(b) {
-  const keys = ['tree', 'cool', 'green', 'water'];
-  for (const k of keys) {
+  for (const k of ['tree', 'cool', 'green', 'water']) {
     const v = Number(b[k]);
     if (!Number.isFinite(v) || v < 0 || v > 100) throw new ApiError(`${k} must be between 0 and 100`, 422, 'INVALID_INPUT');
   }
-  const before = b.lat != null && b.lng != null ? nearest(Number(b.lat), Number(b.lng)).h.lst : 43.2;
-  const reduction = r1(Math.min(8, b.tree * 0.046 + b.cool * 0.032 + b.green * 0.035 + b.water * 0.022));
-  return { before, after: r1(before - reduction), reduction };
+  const before = b.lat != null && b.lng != null ? nearest(Number(b.lat), Number(b.lng)).h.lst : 41.3;
+  const reduction = r2(b.tree * 0.0167 + b.green * 0.0013);
+  return { before, after: r2(before - reduction), reduction };
 }
 
 function recommendations(id) {
   const h = D.hotspots.find((x) => String(x.id) === String(id));
   if (!h) throw new ApiError('Location not found', 404, 'NOT_FOUND');
-  const f = Math.min(1.1, Math.max(0.4, (h.lst - 36) / 10));
+  const f = Math.min(1.1, Math.max(0.6, (h.lst - 36) / 10));
   const strategies = D.strategyBase.map((s) => {
-    const est = r1(s.est_cooling * f);
-    return { ...s, est_cooling: est, impact: est >= 3.5 ? 'High' : est >= 2 ? 'Medium' : 'Low' };
+    const est = s.est_cooling == null ? null : r2(s.est_cooling * f);
+    return { ...s, est_cooling: est, impact: est == null ? 'Low' : est >= 0.4 ? 'Medium' : 'Low' };
   });
-  const overall = r1(Math.max(...strategies.map((s) => s.est_cooling)) * 1.0);
-  return { location: { id: h.id, name: h.name, lat: h.lat, lng: h.lng, lst: h.lst, driver: h.driver }, strategies, overall_cooling: overall };
+  return { location: { id: h.id, name: h.name, lat: h.lat, lng: h.lng, lst: h.lst, driver: h.driver }, strategies, overall_cooling: r2(strategies[0].est_cooling + strategies[1].est_cooling) };
+}
+
+function trendPoint(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const doy = (Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86400000;
+  const avg = 30.5 + 8.5 * Math.sin(((doy - 80) / 365) * 2 * Math.PI);
+  return { date: iso, min: r1(avg - 4), avg: r1(avg), max: r1(avg + 10) };
 }
 
 // ---- auth (demo only: kept in this browser's localStorage) ----
@@ -114,22 +125,25 @@ export async function mockHandle(method, path, { params = {}, body = {}, token }
   await wait();
   switch (`${method} ${path}`) {
     case 'GET /health': return { status: 'ok', model_version: 'demo', latest_date: D.LATEST_DATE };
-    case 'GET /overview': return { city: params.city || 'Delhi-NCR', date: params.date || D.LATEST_DATE, ...D.overview };
+    case 'GET /overview': return { city: params.city || 'Central Delhi', date: params.date || D.LATEST_DATE, ...D.overview };
     case 'GET /hotspots': return D.hotspots.slice(0, Number(params.limit) || 50);
     case 'GET /trend': {
       const to = params.to || D.LATEST_DATE;
-      return D.trendBase.map((t, i) => ({ date: addDays(to, i - (D.trendBase.length - 1)), ...t }));
+      const from = params.from || addDays(to, -180);
+      const out = [];
+      for (let d = to; d >= from && out.length < 26; d = addDays(d, -14)) out.unshift(trendPoint(d));
+      return out;
     }
     case 'GET /metrics': return D.metrics;
     case 'GET /predictions/scatter':
       return Array.from({ length: Math.min(Number(params.limit) || 60, 200) }, (_, i) => {
         const actual = 26 + ((i * 17) % 29);
-        return { actual, predicted: r1(actual + Math.sin(i * 12.9898) * 2.4) };
+        return { actual, predicted: r1(actual + Math.sin(i * 12.9898) * 2.8) };
       });
     case 'POST /predict': {
       if (body.area) {
         const h = D.hotspots.find((x) => x.name === body.area);
-        if (!h) return { area: body.area, lat: 28.61, lng: 77.21, predicted_lst: 34.7, actual_lst: null, features: { ndvi: 0.29, builtup: 42 } };
+        if (!h) throw new ApiError(`Unknown area: ${body.area}`, 404, 'NOT_FOUND');
         return predictAt(h.lat, h.lng);
       }
       return predictAt(...needLatLng(body));
@@ -140,8 +154,8 @@ export async function mockHandle(method, path, { params = {}, body = {}, token }
     case 'GET /shap/summary': return shapSummary();
     case 'POST /simulate': return simulate(body);
     case 'GET /scenarios/compare': {
-      const f = params.lat != null && params.lng != null ? nearest(Number(params.lat), Number(params.lng)).h.lst / 48.7 : 0.9;
-      return D.scenarioBase.map((s) => ({ name: s.name, reduction: r1(s.reduction * f) }));
+      const f = params.lat != null && params.lng != null ? nearest(Number(params.lat), Number(params.lng)).h.lst / 47.6 : 0.9;
+      return D.scenarioBase.map((s) => ({ name: s.name, reduction: s.reduction == null ? null : r2(s.reduction * f) }));
     }
     case 'GET /recommendations': return recommendations(params.location_id);
     case 'GET /map/layers': return D.layers;

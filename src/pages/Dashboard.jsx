@@ -8,6 +8,7 @@ import ShapBars from '../components/ShapBars.jsx';
 import Gauge from '../components/Gauge.jsx';
 import HotspotTable from '../components/HotspotTable.jsx';
 import Async, { Skeleton } from '../components/Async.jsx';
+import { MonsoonWarning } from '../components/AccuracyNote.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
@@ -33,7 +34,7 @@ export default function Dashboard() {
   const shap = useApi(() => api.shapGlobal(), []);
   const metrics = useApi(() => api.metrics(), []);
   const trend = useApi(
-    () => api.trend({ city: cityName, from: effectiveDate ? addDays(effectiveDate, -4) : undefined, to: effectiveDate || undefined }),
+    () => api.trend({ city: cityName, from: effectiveDate ? addDays(effectiveDate, -180) : undefined, to: effectiveDate || undefined }),
     [cityName, effectiveDate]
   );
   const lstLayer = layers.data?.find((l) => l.id === 'lst');
@@ -106,6 +107,7 @@ export default function Dashboard() {
                 <Gauge value={m.r2} />
                 <div className="mt-2 font-bold">{m.model} Model</div>
                 <div className="muted">MAE {m.mae} · RMSE {m.rmse}</div>
+                <MonsoonWarning className="mt-3" />
               </div>
             )}
           </Async>

@@ -31,6 +31,8 @@ export default function Shap() {
   const drivers = useApi(() => api.shapDrivers(), []);
   const summary = useApi(() => api.shapSummary({ limit: 300 }), []);
   const spots = useApi(() => api.hotspots({ city: cityName, date }), [cityName, date]);
+  // The ML package has no summary-plot data; hide the section if the backend answers 404 / 501
+  const noSummary = summary.error && [404, 501].includes(summary.error.status);
   const [pick, setPick] = useState('');
   const chosen = spots.data?.find((s) => String(s.id) === pick) || spots.data?.[0];
   const local = useApi(() => (chosen ? api.shapLocal({ lat: chosen.lat, lng: chosen.lng }) : null), [chosen?.id]);
@@ -63,11 +65,13 @@ export default function Shap() {
         </div>
       </section>
 
+      {!noSummary && (
       <section className="card">
         <h2 className="card-title">SHAP summary plot</h2>
         <p className="muted mb-3">Each dot is one sample. Dots to the right raise the predicted temperature; red dots have a high value of that feature.</p>
         <Async state={summary} height={300}>{(d) => <ShapSummaryPlot data={d} />}</Async>
       </section>
+      )}
 
       <section className="grid gap-4 md:grid-cols-2">
         <Async state={drivers} height={140}>
