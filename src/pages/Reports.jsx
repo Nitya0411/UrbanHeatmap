@@ -57,7 +57,7 @@ export default function Reports() {
               {d.strategies.map((s) => (
                 <li key={s.title} className="flex flex-wrap items-center gap-2">
                   <span>{s.title}: {cooling(s.est_cooling)}</span>
-                  {isNum(s.est_cooling) && <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact] || impactClass.Low}`}>{s.impact} impact</span>}
+                  {isNum(s.est_cooling) && s.est_cooling >= 0 && <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact] || impactClass.Low}`}>{s.impact} impact</span>}
                 </li>
               ))}
               <li className="pt-1 font-bold">Overall expected cooling: {cooling(d.overall_cooling)}</li>

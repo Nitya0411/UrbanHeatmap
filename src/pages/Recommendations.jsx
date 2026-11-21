@@ -57,7 +57,9 @@ export default function Recommendations() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <b className="text-sm">{s.title}</b>
-                          {isNum(s.est_cooling)
+                          {isNum(s.est_cooling) && s.est_cooling < 0
+                            ? <span className="rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:bg-red-950 dark:text-red-300">Model shows warming</span>
+                            : isNum(s.est_cooling)
                             ? <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${impactClass[s.impact] || impactClass.Low}`}>{s.impact} impact</span>
                             : <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Not modelled</span>}
                         </div>

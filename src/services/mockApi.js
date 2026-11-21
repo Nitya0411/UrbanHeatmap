@@ -21,7 +21,7 @@ function needLatLng(p) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new ApiError('lat and lng are required numbers', 422, 'INVALID_INPUT');
   const a = D.AREA;
   if (lat < a.minLat || lat > a.maxLat || lng < a.minLng || lng > a.maxLng) {
-    throw new ApiError('This point is outside the modelled area (Central Delhi).', 422, 'OUTSIDE_AREA');
+    throw new ApiError('This point is outside the modelled area (Delhi-NCR).', 422, 'OUTSIDE_AREA');
   }
   return [lat, lng];
 }
@@ -32,7 +32,7 @@ function predictAt(lat, lng) {
   return { area: near ? h.name : 'Selected location', lat, lng, predicted_lst: Math.max(30, r1(h.lst + 0.3 - d * 40)), actual_lst: near ? h.lst : null, features: { ndvi: h.ndvi, builtup: h.builtup } };
 }
 
-const W = [['Air temperature', 0.55], ['Built-up / bare-surface index (NDBI)', 0.2], ['NDVI', 0.1], ['Humidity', 0.05], ['Sun elevation', 0.04], ['Day of year', 0.03], ['Wind speed', 0.02], ['Others', 0.01]];
+const W = [['Air temperature', 0.5], ['Sun elevation', 0.15], ['NDBI (built-up / bare surface)', 0.15], ['Day of year', 0.06], ['Humidity', 0.04], ['Albedo', 0.03], ['NDVI', 0.02], ['Others', 0.05]];
 function localShap(lat, lng) {
   const p = predictAt(lat, lng);
   const delta = p.predicted_lst - 34;
@@ -42,9 +42,9 @@ function localShap(lat, lng) {
   return { lat, lng, predicted_lst: p.predicted_lst, base_value: 34.0, contributions };
 }
 
-const NEG = ['NDVI', 'Humidity', 'Wind speed'];
+const NEG = ['NDVI', 'Humidity', 'Wind speed', 'Albedo'];
 function shapSummary() {
-  return D.shapGlobal.map((f, fi) => ({
+  return D.shapGlobal.slice(0, 8).map((f, fi) => ({
     feature: f.feature,
     points: Array.from({ length: 40 }, (_, i) => {
       const value = ((i * 37 + fi * 11) % 40) / 39;
@@ -55,26 +55,34 @@ function shapSummary() {
   }));
 }
 
-// Only vegetation (tree cover, green roofs) is modelled. Cool roofs, albedo and water bodies are not.
+// Effect of the sample scenarios grows with how hot the place is.
+const locFactor = (lst) => Math.min(2.6, Math.max(1, 1 + (lst - 40) / 5));
+
+// Mean effect of 100% of each measure (see D.scenarioBase). Negative = warming.
 function simulate(b) {
   for (const k of ['tree', 'cool', 'green', 'water']) {
     const v = Number(b[k]);
     if (!Number.isFinite(v) || v < 0 || v > 100) throw new ApiError(`${k} must be between 0 and 100`, 422, 'INVALID_INPUT');
   }
-  const before = b.lat != null && b.lng != null ? nearest(Number(b.lat), Number(b.lng)).h.lst : 41.3;
-  const reduction = r2(b.tree * 0.0167 + b.green * 0.0013);
+  const h = b.lat != null && b.lng != null ? nearest(Number(b.lat), Number(b.lng)).h : null;
+  const before = h ? h.lst : 34.1;
+  const f = h ? locFactor(h.lst) : 1;
+  const reduction = r2(((b.tree / 100) * 0.12 + (b.cool / 100) * -0.65 + (b.green / 100) * 0.0 + (b.water / 100) * 0.52) * f);
   return { before, after: r2(before - reduction), reduction };
 }
 
 function recommendations(id) {
   const h = D.hotspots.find((x) => String(x.id) === String(id));
   if (!h) throw new ApiError('Location not found', 404, 'NOT_FOUND');
-  const f = Math.min(1.1, Math.max(0.6, (h.lst - 36) / 10));
-  const strategies = D.strategyBase.map((s) => {
-    const est = s.est_cooling == null ? null : r2(s.est_cooling * f);
-    return { ...s, est_cooling: est, impact: est == null ? 'Low' : est >= 0.4 ? 'Medium' : 'Low' };
-  });
-  return { location: { id: h.id, name: h.name, lat: h.lat, lng: h.lng, lst: h.lst, driver: h.driver }, strategies, overall_cooling: r2(strategies[0].est_cooling + strategies[1].est_cooling) };
+  const f = locFactor(h.lst);
+  const strategies = D.strategyBase
+    .map((s) => {
+      const est = r2(s.est_cooling * f);
+      return { ...s, est_cooling: est, impact: est >= 0.8 ? 'High' : est >= 0.3 ? 'Medium' : 'Low' };
+    })
+    .sort((x, y) => y.est_cooling - x.est_cooling);
+  const overall = r2(strategies.filter((s) => s.est_cooling > 0).reduce((t, s) => t + s.est_cooling, 0));
+  return { location: { id: h.id, name: h.name, lat: h.lat, lng: h.lng, lst: h.lst, driver: h.driver }, strategies, overall_cooling: overall };
 }
 
 function trendPoint(iso) {
@@ -125,13 +133,13 @@ export async function mockHandle(method, path, { params = {}, body = {}, token }
   await wait();
   switch (`${method} ${path}`) {
     case 'GET /health': return { status: 'ok', model_version: 'demo', latest_date: D.LATEST_DATE };
-    case 'GET /overview': return { city: params.city || 'Central Delhi', date: params.date || D.LATEST_DATE, ...D.overview };
+    case 'GET /overview': return { city: params.city || 'Delhi-NCR', date: params.date || D.LATEST_DATE, ...D.overview };
     case 'GET /hotspots': return D.hotspots.slice(0, Number(params.limit) || 50);
     case 'GET /trend': {
       const to = params.to || D.LATEST_DATE;
       const from = params.from || addDays(to, -180);
       const out = [];
-      for (let d = to; d >= from && out.length < 26; d = addDays(d, -14)) out.unshift(trendPoint(d));
+      for (let d = to; d >= from && out.length < 26; d = addDays(d, -7)) out.unshift(trendPoint(d));
       return out;
     }
     case 'GET /metrics': return D.metrics;
@@ -154,7 +162,7 @@ export async function mockHandle(method, path, { params = {}, body = {}, token }
     case 'GET /shap/summary': return shapSummary();
     case 'POST /simulate': return simulate(body);
     case 'GET /scenarios/compare': {
-      const f = params.lat != null && params.lng != null ? nearest(Number(params.lat), Number(params.lng)).h.lst / 47.6 : 0.9;
+      const f = params.lat != null && params.lng != null ? locFactor(nearest(Number(params.lat), Number(params.lng)).h.lst) : 1;
       return D.scenarioBase.map((s) => ({ name: s.name, reduction: s.reduction == null ? null : r2(s.reduction * f) }));
     }
     case 'GET /recommendations': return recommendations(params.location_id);

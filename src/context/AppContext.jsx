@@ -3,7 +3,7 @@ import { api } from '../services/api.js';
 import { useAuth } from './AuthContext.jsx';
 
 const AppCtx = createContext(null);
-const FALLBACK_CITY = { id: 'central-delhi', name: 'Central Delhi', center: [28.632, 77.219], zoom: 12 };
+const FALLBACK_CITY = { id: 'delhi-ncr', name: 'Delhi-NCR', center: [28.55, 77.2], zoom: 10 };
 
 // Holds the city, date and map location that every page shares.
 export function AppProvider({ children }) {

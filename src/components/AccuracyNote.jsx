@@ -24,6 +24,14 @@ export function MonsoonWarning({ className = '' }) {
 // Cooling estimates smaller than the model's own average error must not be read as real-world cooling.
 export function SmallEffectNote({ value, className = '' }) {
   const { data } = useApi(() => api.metrics(), []);
+  if (isNum(value) && value < 0) {
+    return (
+      <div role="note" className={`flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-left text-xs text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200 ${className}`}>
+        <AlertTriangle size={14} className="mt-0.5 flex-none" />
+        <span>The model predicts a temperature <b>increase</b> for this change. That is unexpected, so treat it as a limitation of the model and do not report it as a real effect.</span>
+      </div>
+    );
+  }
   if (!isNum(value) || !isNum(data?.mae) || value >= data.mae) return null;
   return (
     <div role="note" className={`flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-left text-xs text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200 ${className}`}>

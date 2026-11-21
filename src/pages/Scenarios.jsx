@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../components/PageHeader.jsx';
 import HeatMap from '../components/HeatMap.jsx';
 import Async, { ErrorBox } from '../components/Async.jsx';
@@ -9,14 +9,15 @@ import { useApp } from '../context/AppContext.jsx';
 import { api } from '../services/api.js';
 import { cooling, isNum } from '../utils/format.js';
 
-// The model only simulates vegetation. Cool roofs, high albedo and water bodies are "not modelled".
-const DEFAULTS = { tree: 30, green: 25 };
+// The four what-if measures of the model. Each slider is a share (0 to 100%) of the maximum change the backend applies.
+const DEFAULTS = { tree: 30, cool: 0, green: 0, water: 10 };
 const controls = [
-  { k: 'tree', label: 'Increase tree cover' },
-  { k: 'green', label: 'Green roof coverage' },
+  { k: 'tree', label: 'Increase tree canopy' },
+  { k: 'cool', label: 'Cool roofs (higher albedo)' },
+  { k: 'green', label: 'Reduce building / concrete density' },
+  { k: 'water', label: 'Water body expansion' },
 ];
-const notModelled = ['Cool roof coverage', 'Water body expansion'];
-const presets = { Low: { tree: 10, green: 5 }, Moderate: DEFAULTS, High: { tree: 60, green: 45 } };
+const presets = { Low: { tree: 10, cool: 0, green: 0, water: 2 }, Moderate: DEFAULTS, High: { tree: 60, cool: 0, green: 25, water: 25 } };
 
 export default function Scenarios() {
   const { cityName, date } = useApp();
@@ -35,7 +36,7 @@ export default function Scenarios() {
   const change = (next) => { setP(next); setRes(null); };
   const run = async () => {
     setBusy(true); setError(null);
-    try { setRes(await api.simulate({ tree: p.tree, green: p.green, cool: 0, water: 0, lat: loc?.lat, lng: loc?.lng })); } catch (e) { setError(e); } finally { setBusy(false); }
+    try { setRes(await api.simulate({ tree: p.tree, cool: p.cool, green: p.green, water: p.water, lat: loc?.lat, lng: loc?.lng })); } catch (e) { setError(e); } finally { setBusy(false); }
   };
 
   return (
@@ -57,12 +58,6 @@ export default function Scenarios() {
                 <span className="flex justify-between"><span>{label}</span><b>{p[k]}%</b></span>
                 <input type="range" min="0" max="100" value={p[k]} onChange={(e) => change({ ...p, [k]: +e.target.value })} className="mt-2 w-full accent-teal-600" />
               </label>
-            ))}
-            {notModelled.map((label) => (
-              <div key={label} className="block text-sm opacity-60">
-                <span className="flex items-center justify-between"><span>{label}</span><span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Not modelled</span></span>
-                <input type="range" min="0" max="100" value="0" disabled aria-label={`${label} (not modelled)`} className="mt-2 w-full" />
-              </div>
             ))}
           </div>
           <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Quick scenarios">
@@ -92,11 +87,11 @@ export default function Scenarios() {
                   <HeatMap points={[{ ...loc, lst: res.after }]} center={[loc.lat, loc.lng]} zoom={13} height="clamp(190px, 26vh, 300px)" showLegend={false} />
                 </div>
               </div>
-              <p className="mt-3 text-lg">Estimated temperature reduction: <b className="text-teal-600 dark:text-teal-400">{cooling(res.reduction)}</b></p>
+              <p className="mt-3 text-lg">Estimated temperature change: <b className="text-teal-600 dark:text-teal-400">{cooling(res.reduction)}</b></p>
               <SmallEffectNote value={res.reduction} className="mt-2" />
             </div>
           )}
-          <h3 className="mt-5 text-sm font-bold">Single-measure comparison (predicted LST reduction, °C)</h3>
+          <h3 className="mt-5 text-sm font-bold">Single-measure comparison (predicted LST change, °C; above 0 = cooling)</h3>
           <div className="relative mt-2 min-h-[150px] flex-1">
             <Async state={compare} height={224}>
               {() => (modelled.length > 0 ? (
@@ -104,9 +99,12 @@ export default function Scenarios() {
                   <BarChart data={modelled}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} domain={[0, 'auto']} />
+                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} domain={['auto', 'auto']} />
+                    <ReferenceLine y={0} stroke="#94a3b8" />
                     <Tooltip />
-                    <Bar dataKey="reduction" fill="#0d9488" radius={[6, 6, 0, 0]} name="Reduction (°C)" />
+                    <Bar dataKey="reduction" radius={[6, 6, 0, 0]} name="Cooling (°C)">
+                      {modelled.map((r) => <Cell key={r.name} fill={r.reduction < 0 ? '#dc2626' : '#0d9488'} />)}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer></div>
               ) : <p className="muted text-sm">No modelled scenarios for this location.</p>)}
