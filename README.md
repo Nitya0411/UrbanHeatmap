@@ -76,14 +76,15 @@ backend/contract_stub.py   reference implementation with sample data
 - Login token is kept in `localStorage`. A 401 response signs the user out.
 - Mock-mode accounts are for demos only. Do not enter a real password there.
 
-## ML model v3 (Central Delhi)
+## ML model v4 (Delhi-NCR)
 
-- The model covers **Central Delhi**, not all of Delhi-NCR. The area name, map centre and zoom come from `/api/cities`.
-- The dashboard shows the monsoon warning from `/api/metrics` (`warning`) on the metrics card and next to every prediction and scenario.
-- Cool roofs, high albedo and water bodies are **not modelled**: the Scenarios page disables those sliders and shows "Not modelled" instead of a number.
-- Cooling estimates smaller than the model's average error (MAE) get a note saying they show direction only.
-- Map tiles are served at `/tiles` (proxied by Vite) for zoom 11 to 16.
+- The area name, map centre and zoom come from `/api/cities` (fallback: Delhi-NCR).
+- Four what-if sliders: tree canopy, cool roofs, reduce building density, water bodies. The `green` field of `/api/simulate` means building density.
+- A negative `reduction` is shown as warming, with a red note. `null` is shown as "Not modelled".
+- Estimates smaller than the model's average error (MAE) get a note saying they show direction only.
+- If `/api/metrics` sends a `warning`, it is shown on the metrics card and next to every prediction and scenario.
 - If `/api/shap/summary` returns 404, the SHAP summary plot is hidden.
+- Map tiles are proxied from `/tiles`; the zoom range is set in `src/config.js`.
 
 ## Printing
 

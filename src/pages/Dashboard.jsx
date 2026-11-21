@@ -62,7 +62,7 @@ export default function Dashboard() {
         <div className="flex flex-col gap-4">
           <div className="card">
             <h2 className="card-title">Feature Importance (SHAP)</h2>
-            <Async state={shap} height={200}>{(d) => <ShapBars data={d} />}</Async>
+            <Async state={shap} height={200}>{(d) => <ShapBars data={d.slice(0, 8)} />}</Async>
           </div>
           <div className="card flex-1">
             <h2 className="card-title mb-3">Quick Actions</h2>

@@ -1,10 +1,19 @@
 # Urban Heatmap: API Contract
 
-Frontend ↔ Backend/ML · Version 1.2 · Prepared by the frontend team
+Frontend ↔ Backend/ML · Version 1.3 · Prepared by the frontend team
 
 ## 1. Purpose
 
 This document lists every API the React dashboard needs. The backend builds these endpoints and the frontend calls them exactly as written. If anything must change, tell the frontend team first so both sides stay in sync. Until the backend is ready, the frontend runs on sample data in the same shapes. All numbers in the examples are placeholders only.
+
+### What changed in v1.3 (ML model v4, Delhi-NCR)
+
+- **Area:** the v4 model (`artifacts/lst_v4`) covers **Delhi-NCR** again (`study_region` in `metrics.json`). The default `city` is the first entry of `/api/cities`.
+- **Four what-if measures:** tree canopy (+NDVI), cool roofs (+albedo), reduce building density, water bodies (+water fraction). In `/api/simulate` the keys stay `tree`, `cool`, `green`, `water`; **`green` now means "reduce building / concrete density"**. Each value is 0 to 100 (% of the maximum change the backend applies).
+- **`reduction` can be negative.** Positive means cooling, negative means warming. The frontend shows warming clearly ("+0.65 °C (warming)") and adds a note that the model result is unexpected. `null` still means "not modelled".
+- **Names of scenarios** in `/api/scenarios/compare` are free text now (the frontend draws whatever names it receives).
+- **Metrics:** `/api/metrics` should include `n_train`, `n_test` and may include `warning`. The v4 `metrics.json` has no warning; if the team wants a caveat shown (for example how the test set was chosen), put it in `warning`.
+- **Tiles:** zoom range is configurable in `src/config.js` (`TILE_ZOOM`).
 
 ### What changed in v1.2 (ML model v3, Central Delhi)
 
